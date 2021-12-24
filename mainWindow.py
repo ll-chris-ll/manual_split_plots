@@ -62,5 +62,10 @@ class MainWindow(tk.Frame):
         self.buttons_frame.grid_forget()
 
         # todo: temp stuff
-        fd = FileDispenser()
-        fd.find_files()
+        # fd = FileDispenser()
+        # fd.find_files()
+        App.FILES = FileDispenser()
+        App.FILES.find_files()
+
+        while App.FILES.has_next():
+            print(App.FILES.next())
