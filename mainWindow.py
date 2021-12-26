@@ -61,7 +61,7 @@ class MainWindow(tk.Frame):
         self.select_directory_button.grid(row=2, column=0, columnspan=2)
 
     def select_directory(self):
-        dir_selected = filedialog.askdirectory(initialdir="/home/chris/Downloads/hdr_example")
+        dir_selected = filedialog.askdirectory()#initialdir="/home/chris/Downloads/hdr_example")
         App.WORKING_DIR = dir_selected
         self.buttons_frame.grid_forget()
 
