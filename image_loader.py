@@ -12,13 +12,15 @@ from PIL import  Image, ImageTk
 
 class ImageLoader(threading.Thread):
 
-    def __init__(self, action_queue):
+    def __init__(self, action_queue, r_qu):
         super().__init__()
         config = configparser.ConfigParser()
         config.read('config.ini')
         self.buffer_count = int(config['IMAGES']['buffer'])
+        App.BUFFER_COUNT = self.buffer_count
 
         self.action_queue:queue.Queue = action_queue
+        self.r_qu:queue.Queue = r_qu
 
         self.image_threads = []
 
@@ -29,11 +31,12 @@ class ImageLoader(threading.Thread):
             if action == "load_images": self._load()
 
     def _load(self):
-        print(App.FILES.next())
+        # print(App.FILES.next())
         while len(self.image_threads) < self.buffer_count and App.FILES.has_next():
-            t_image = ThreadedImage(os.path.join(App.WORKING_DIR, App.FILES.next()))
+            t_image = ThreadedImage(os.path.join(App.WORKING_DIR, App.FILES.next()), self.r_qu)
             t_image.start()
             self.image_threads.append(t_image)
+
 
     def get_image(self):
         if len(self.image_threads):
@@ -44,7 +47,7 @@ class ImageLoader(threading.Thread):
 
 class ThreadedImage(threading.Thread):
 
-    def __init__(self, image_path):
+    def __init__(self, image_path, r_qu):
         super().__init__()
         config = configparser.ConfigParser()
         config.read('config.ini')
@@ -52,9 +55,10 @@ class ThreadedImage(threading.Thread):
         self.rgb_band = list(map(int, config['IMAGES']['rgb'].split(",")))
         self.image_path = image_path
         self.image = None
+        self.r_qu:queue.Queue = r_qu
 
     def run(self) -> None:
-        print(f"loading image:{self.image_path}")
+        # print(f"loading image:{self.image_path}")
         raw = envi.open(self.image_path)
         self.rgb_band = [random.randrange(20,200),random.randrange(20,200),random.randrange(20,200)]
         rgb_img = raw.read_bands(self.rgb_band)
@@ -72,6 +76,9 @@ class ThreadedImage(threading.Thread):
         p_img = Image.fromarray(reshaped_image)
         p_img = p_img.resize((width, 1000))
         self.image = ImageTk.PhotoImage(p_img)
+
+        self.r_qu.put(["ui", "image loaded"])
+        # print(f"Loaded: {self.image_path}")
 
 
     def get_image(self):

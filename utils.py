@@ -72,3 +72,4 @@ class App:
     SENSOR : Sensor
     WORKING_DIR : str
     FILES: FileDispenser
+    BUFFER_COUNT: int

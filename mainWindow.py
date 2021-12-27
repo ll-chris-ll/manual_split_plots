@@ -19,9 +19,19 @@ class MainWindow(tk.Frame):
         self.master.geometry("400x200")
         self.pack(fill=tk.BOTH, expand=1)
 
+        self.background_task_load_indicator = []
+
+        master.bind("<<background_task_complete_image_loaded>>", self.update_background_task_load_indicator)
+
         """ Create Canvas """
         self.canvas = tk.Canvas(self, width=400, height=400, background='green')
         self.canvas.bind('<Button-1>', self.load_next_image)
+
+        scrollbar = tk.Scrollbar(self, command=self.canvas.yview)
+        scrollbar.grid(row=0, column=1)
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas.bind('<Configure>', self.on_configure)
+
         """ Select Sensor """
         self.buttons_frame = ttk.Frame(self, borderwidth=1, relief="raised")
         self.label = ttk.Label(self.buttons_frame, text="Select Sensor")
@@ -39,7 +49,7 @@ class MainWindow(tk.Frame):
 
         """ Status Bar """
         self.status_bar = ttk.Frame(self.master, borderwidth=2, relief="groove")
-        self.sb_text_left = tk.StringVar(value="left")
+        self.sb_text_left = tk.StringVar(value="")
         self.sb_text_centre = tk.StringVar(value="centre")
         self.sb_text_right = tk.StringVar(value="right")
         sb_label_left = tk.Label(self.status_bar, textvariable=self.sb_text_left)
@@ -52,6 +62,13 @@ class MainWindow(tk.Frame):
 
 
         self.status_bar.pack(expand=1, anchor="sw", fill="x")
+        self._set_background_task_load_indicator()
+
+
+    def on_configure(self, event):
+        # update scrollregion after starting 'mainloop'
+        # when all widgets are in canvas
+        self.canvas.configure(scrollregion=self.canvas.bbox('all'))
 
     def select_sensor(self, sensor):
         self.sb_text_right.set(sensor.value)
@@ -61,7 +78,7 @@ class MainWindow(tk.Frame):
         self.select_directory_button.grid(row=2, column=0, columnspan=2)
 
     def select_directory(self):
-        dir_selected = filedialog.askdirectory()#initialdir="/home/chris/Downloads/hdr_example")
+        dir_selected = filedialog.askdirectory(initialdir="/home/chris/Downloads/hdr_example")
         App.WORKING_DIR = dir_selected
         self.buttons_frame.grid_forget()
 
@@ -80,21 +97,33 @@ class MainWindow(tk.Frame):
         #     print(App.FILES.count())
 
     def load_next_image(self, event):
+        self.update_background_task_load_indicator(False)
+        print(App.FILES.count())
         current_image = self.image_loader.get_image()
-        # width = _image.shape[1]
-        # # print(width)
-        # height = _image.shape[0]
-        # # resized_img = (resize(gg,(width,height//2)))
-        # img_min = np.min(_image)
-        # img_max = np.max(_image)
-        # stretched_pixels = [((i - img_min) * 2 / (img_max - img_min * 2)) for i in _image.flatten()]
-        # thumbnail = np.reshape(stretched_pixels, (height, width, 3))
-        # reshaped_image = (thumbnail * 255).astype(np.uint8)  # TODO contrast stretch
-        #
-        # p_img = Image.fromarray(reshaped_image)
-        # p_img = p_img.resize((width, 1000))
-        # print(p_img)
-        # current_image = ImageTk.PhotoImage(p_img)
-        self.master.current_image = current_image
-        self.canvas.config(width=current_image.width(), height=current_image.height())
-        self.canvas.create_image(0, 0, image=current_image, anchor='nw', tags='image')
+        if current_image is not None:
+            self.master.current_image = current_image
+            self.canvas.config(width=current_image.width(), height=current_image.height())
+            self.canvas.create_image(0, 0, image=current_image, anchor='nw', tags='image')
+        else:
+            self.canvas.config(bg="red")
+
+    def _set_background_task_load_indicator(self):
+        for i in range(App.BUFFER_COUNT):
+            self.background_task_load_indicator.append("U")
+        self._update_sb_text_left()
+
+    def update_background_task_load_indicator(self, event):
+        if not event:
+            self.background_task_load_indicator.pop(0)
+            self.background_task_load_indicator.append("U")
+            self._update_sb_text_left()
+        else:
+            for i,item in enumerate(self.background_task_load_indicator):
+                if item == "U":
+                    self.background_task_load_indicator[i] = "O"
+                    self._update_sb_text_left()
+                    return
+
+    def _update_sb_text_left(self):
+        str_ = ' '.join(self.background_task_load_indicator)
+        self.sb_text_left.set(str_)
