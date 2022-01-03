@@ -14,7 +14,10 @@ class Relay(threading.Thread):
 
     def run(self) -> None:
         while True:
-            msg = self.qu.get()
-            # print(msg)
-            if msg[0] == 'ui':
-                self.mw.master.event_generate("<<background_task_complete_image_loaded>>", when="tail")
+            try:
+                msg = self.qu.get(timeout=1)
+                if msg[0] == 'ui':
+                    self.mw.master.event_generate("<<background_task_complete_image_loaded>>", when="tail")
+                elif msg[0] == 'EXIT':break
+            except queue.Empty as empty:
+                print("empty")

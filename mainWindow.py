@@ -23,6 +23,11 @@ class MainWindow(tk.Frame):
 
         master.bind("<<background_task_complete_image_loaded>>", self.update_background_task_load_indicator)
 
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=10)
+        self.rowconfigure(2, weight=1)
+
+
         """ Create Canvas """
         self.canvas = tk.Canvas(self, width=400, height=400, background='green')
         self.canvas.bind('<Button-1>', self.load_next_image)
@@ -101,11 +106,12 @@ class MainWindow(tk.Frame):
         print(App.FILES.count())
         current_image = self.image_loader.get_image()
         if current_image is not None:
+            print(current_image)
             self.master.current_image = current_image
             self.canvas.config(width=current_image.width(), height=current_image.height())
             self.canvas.create_image(0, 0, image=current_image, anchor='nw', tags='image')
         else:
-            self.canvas.config(bg="red")
+            print("...................................NOPE")
 
     def _set_background_task_load_indicator(self):
         for i in range(App.BUFFER_COUNT):

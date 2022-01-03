@@ -1,24 +1,21 @@
-import queue
-import tkinter
+import configparser
+import time
+import uuid
 
-from image_loader import ImageLoader
-from mainWindow import MainWindow
-from relay import Relay
+from image_controller import ImageController
+from gui import MainWindow
+from utils import queues, App
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+App.BUFFER_COUNT = int(config['IMAGES']['buffer'])
+App.SESSION_ID = uuid.uuid4()
+App.RGB_BAND = list(map(int, config['IMAGES']['rgb'].split(",")))
+
 
 if __name__ == '__main__':
-    action_queue = queue.Queue()
-    r_qu = queue.Queue()
+    image_controller = ImageController()
+    image_controller.start()
 
-    image_loader = ImageLoader(action_queue, r_qu)
-    image_loader.start()
-
-    root = tkinter.Tk()
-    mw = MainWindow(root, action_queue, image_loader)
-
-    relay = Relay(r_qu, image_loader, mw)
-    relay.start()
-
-    root.mainloop()
-
-    relay.join()
-    image_loader.join()
+    mw = MainWindow(queues=queues, image_controller=image_controller)
+    mw.mainloop()

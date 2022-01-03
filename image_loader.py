@@ -26,9 +26,11 @@ class ImageLoader(threading.Thread):
 
     def run(self) -> None:
         while True:
-            action = self.action_queue.get()
-            print(action)
-            if action == "load_images": self._load()
+            try:
+                action = self.action_queue.get()
+                if action == "load_images": self._load()
+            except queue.Empty as empty:
+                pass
 
     def _load(self):
         # print(App.FILES.next())
@@ -40,9 +42,10 @@ class ImageLoader(threading.Thread):
 
     def get_image(self):
         if len(self.image_threads):
-            t_:ThreadedImage = self.image_threads.pop()
+            t_:ThreadedImage = self.image_threads.pop(0)
             self.action_queue.put("load_images")
             return t_.image
+        print("There is no image ready...")
         return None
 
 class ThreadedImage(threading.Thread):
